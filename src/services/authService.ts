@@ -9,6 +9,13 @@ export interface Student {
   secret_code: string;
 }
 
+export interface Admin {
+  id: string;
+  first_name: string;
+  last_name: string;
+  username: string;
+}
+
 export const authService = {
   async login(secretCode: string, password: string): Promise<{ student: Student | null; error: string | null }> {
     try {
@@ -27,6 +34,25 @@ export const authService = {
       return { student: data, error: null };
     } catch (err: any) {
       return { student: null, error: err.message || 'حدث خطأ أثناء تسجيل الدخول' };
+    }
+  },
+
+  async loginAdmin(username: string, password: string): Promise<{ admin: Admin | null; error: string | null }> {
+    try {
+      const { data, error } = await supabase
+        .from('admins')
+        .select('id, first_name, last_name, username')
+        .eq('username', username)
+        .eq('password', password)
+        .single();
+
+      if (error) throw error;
+      if (!data) throw new Error('بيانات الدخول غير صحيحة');
+
+      localStorage.setItem('admin_session', JSON.stringify(data));
+      return { admin: data, error: null };
+    } catch (err: any) {
+      return { admin: null, error: err.message || 'حدث خطأ أثناء تسجيل الدخول' };
     }
   },
 
@@ -52,10 +78,16 @@ export const authService = {
 
   logout() {
     localStorage.removeItem('student_session');
+    localStorage.removeItem('admin_session');
   },
 
   getCurrentStudent(): Student | null {
     const session = localStorage.getItem('student_session');
+    return session ? JSON.parse(session) : null;
+  },
+
+  getCurrentAdmin(): Admin | null {
+    const session = localStorage.getItem('admin_session');
     return session ? JSON.parse(session) : null;
   }
 };

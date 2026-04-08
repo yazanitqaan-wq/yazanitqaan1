@@ -1,9 +1,12 @@
 import React, { useState, useEffect } from 'react';
 import { differenceInSeconds, format } from 'date-fns';
 import { ar } from 'date-fns/locale';
-import { Clock, Calendar, PlayCircle } from 'lucide-react';
+import { Clock, Calendar, PlayCircle, ArrowRight } from 'lucide-react';
 import { Exam } from '../services/examService';
-import { cn } from '../utils/cn';
+import { cn } from '../lib/utils';
+import { Card, CardContent, CardFooter, CardHeader } from './ui/card';
+import { Button } from './ui/button';
+import { Badge } from './ui/badge';
 
 interface ExamCardProps {
   key?: React.Key;
@@ -27,47 +30,74 @@ export default function ExamCard({ exam, onEnterExam }: ExamCardProps) {
   }, [exam.start_time]);
 
   const startDate = new Date(exam.start_time);
+  const isActive = exam.is_active && isReady;
 
   return (
-    <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden hover:shadow-md transition-shadow">
-      <div className="p-6">
-        <div className="flex justify-between items-start mb-4">
-          <h3 className="text-xl font-bold text-gray-900">{exam.title}</h3>
-          <span className={cn(
-            "px-3 py-1 rounded-full text-xs font-semibold",
-            exam.is_active && isReady ? "bg-green-100 text-green-800" : "bg-gray-100 text-gray-800"
-          )}>
-            {exam.is_active && isReady ? 'متاح الآن' : 'غير متاح'}
-          </span>
+    <Card className="group border-0 shadow-sm hover:shadow-2xl transition-all duration-500 rounded-[2rem] overflow-hidden bg-white dark:bg-slate-900 flex flex-col">
+      <CardHeader className="p-0 relative h-48 overflow-hidden">
+        <div className={cn(
+          "absolute inset-0 transition-transform duration-700 group-hover:scale-110",
+          isActive ? "bg-emerald-600" : "bg-primary"
+        )} />
+        <div className="absolute inset-0 opacity-20" style={{ backgroundImage: 'radial-gradient(circle at 2px 2px, white 1px, transparent 0)', backgroundSize: '24px 24px' }} />
+        
+        <div className="absolute top-4 right-4 flex gap-2">
+          {isActive && (
+            <Badge className="bg-white text-emerald-600 border-0 animate-pulse">نشط الآن</Badge>
+          )}
+          <Badge variant="secondary" className="bg-white/20 text-white backdrop-blur-md border-0">
+            {exam.duration} دقيقة
+          </Badge>
         </div>
 
-        <div className="space-y-3 mb-6">
-          <div className="flex items-center text-gray-600">
-            <Calendar className="w-5 h-5 ml-2 text-blue-500" />
+        <div className="absolute bottom-4 right-4 left-4">
+          <h3 className="text-2xl font-serif font-bold text-white line-clamp-2">{exam.title}</h3>
+        </div>
+      </CardHeader>
+
+      <CardContent className="p-8 flex-grow space-y-6">
+        <div className="flex flex-col gap-3 text-sm">
+          <div className="flex items-center gap-2 text-muted-foreground">
+            <Calendar className="w-4 h-4 text-primary" />
             <span>{format(startDate, 'EEEE, d MMMM yyyy', { locale: ar })}</span>
           </div>
-          <div className="flex items-center text-gray-600">
-            <Clock className="w-5 h-5 ml-2 text-blue-500" />
+          <div className="flex items-center gap-2 text-muted-foreground">
+            <Clock className="w-4 h-4 text-primary" />
             <span>{format(startDate, 'h:mm a', { locale: ar })}</span>
-            <span className="mx-2 text-gray-300">|</span>
-            <span>المدة: {exam.duration} دقيقة</span>
           </div>
         </div>
 
-        <button
+        <p className="text-muted-foreground text-sm leading-relaxed line-clamp-3">
+          هذا الامتحان مصمم لتقييم مهاراتك في {exam.title}. تأكد من مراجعة الدروس المطلوبة قبل البدء.
+        </p>
+
+        <div className="flex items-center gap-4 pt-2">
+          <div className="flex -space-x-2 space-x-reverse">
+            {[1, 2, 3].map(i => (
+              <div key={i} className="w-8 h-8 rounded-full border-2 border-white bg-muted flex items-center justify-center text-[10px] font-bold">
+                {String.fromCharCode(64 + i)}
+              </div>
+            ))}
+          </div>
+          <span className="text-[10px] text-muted-foreground uppercase tracking-widest font-medium">+40 طالب شاركوا</span>
+        </div>
+      </CardContent>
+
+      <CardFooter className="p-8 pt-0">
+        <Button 
           onClick={() => onEnterExam(exam.id)}
-          disabled={!isReady || !exam.is_active}
+          disabled={!isActive}
           className={cn(
-            "w-full flex items-center justify-center gap-2 py-3 px-4 rounded-lg font-medium transition-colors",
-            isReady && exam.is_active
-              ? "bg-blue-600 text-white hover:bg-blue-700"
-              : "bg-gray-100 text-gray-400 cursor-not-allowed"
+            "w-full h-14 rounded-2xl text-lg font-bold transition-all group-hover:shadow-xl",
+            isActive 
+              ? "bg-emerald-600 hover:bg-emerald-700 shadow-emerald-600/20" 
+              : "bg-muted text-muted-foreground cursor-not-allowed"
           )}
         >
-          <PlayCircle className="w-5 h-5" />
-          {isReady && exam.is_active ? 'دخول الامتحان' : 'الامتحان لم يبدأ بعد'}
-        </button>
-      </div>
-    </div>
+          {isActive ? 'ابدأ الامتحان الآن' : isReady ? 'انتهى وقت الامتحان' : 'انتظر موعد البدء'}
+          <ArrowRight className="mr-2 w-5 h-5 transition-transform group-hover:-translate-x-1" />
+        </Button>
+      </CardFooter>
+    </Card>
   );
 }

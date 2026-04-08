@@ -1,14 +1,24 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { authService } from '../services/authService';
-import { Menu, X, LogOut, User, Home, BookOpen } from 'lucide-react';
-import { cn } from '../utils/cn';
+import { Menu, X, LogOut, User, Home, BookOpen, LayoutDashboard } from 'lucide-react';
+import { cn } from '../lib/utils';
+import { Button } from './ui/button';
 
 export default function Navbar() {
   const [isOpen, setIsOpen] = useState(false);
+  const [scrolled, setScrolled] = useState(false);
   const navigate = useNavigate();
   const location = useLocation();
   const student = authService.getCurrentStudent();
+  const admin = authService.getCurrentAdmin();
+  const user = student || admin;
+
+  useEffect(() => {
+    const handleScroll = () => setScrolled(window.scrollY > 20);
+    window.addEventListener('scroll', handleScroll);
+    return () => window.removeEventListener('scroll', handleScroll);
+  }, []);
 
   const handleLogout = () => {
     authService.logout();
@@ -19,130 +29,115 @@ export default function Navbar() {
   const closeMenu = () => setIsOpen(false);
 
   const navLinks = [
-    { name: 'الرئيسية', path: '/', icon: <Home className="w-5 h-5" /> },
-    { name: 'الامتحانات', path: '/exams', icon: <BookOpen className="w-5 h-5" /> },
-    { name: 'ملفي الشخصي', path: '/profile', icon: <User className="w-5 h-5" /> },
+    { name: 'الرئيسية', path: '/', icon: <Home className="w-4 h-4" /> },
+    { name: 'الامتحانات', path: '/exams', icon: <BookOpen className="w-4 h-4" /> },
+    { name: 'ملفي الشخصي', path: '/profile', icon: <User className="w-4 h-4" /> },
   ];
 
+  if (admin) {
+    navLinks.push({ name: 'لوحة التحكم', path: '/admin', icon: <LayoutDashboard className="w-4 h-4" /> });
+  }
+
   return (
-    <nav className="bg-white shadow-sm border-b border-gray-100 sticky top-0 z-50">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="flex justify-between h-16">
-          <div className="flex items-center">
-            <Link to="/" className="flex-shrink-0 flex items-center gap-2" onClick={closeMenu}>
-              <div className="w-8 h-8 bg-blue-600 rounded-lg flex items-center justify-center">
-                <span className="text-white font-bold text-xl">Y</span>
-              </div>
-              <span className="font-bold text-xl text-gray-900">أ. يزن أبو كحيل</span>
-            </Link>
-          </div>
+    <nav className={cn(
+      "fixed top-0 left-0 right-0 z-50 transition-all duration-300 px-4 py-3",
+      scrolled ? "bg-background/80 backdrop-blur-lg border-b shadow-sm" : "bg-transparent"
+    )}>
+      <div className="max-w-7xl mx-auto flex justify-between items-center">
+        <div className="flex items-center gap-8">
+          <Link to="/" className="flex items-center gap-3 group" onClick={closeMenu}>
+            <div className="w-10 h-10 bg-primary rounded-xl flex items-center justify-center shadow-lg group-hover:scale-105 transition-transform">
+              <span className="text-primary-foreground font-serif font-bold text-2xl">Y</span>
+            </div>
+            <div className="flex flex-col">
+              <span className="font-serif font-bold text-xl text-foreground leading-none">أ. يزن أبو كحيل</span>
+              <span className="text-[10px] text-muted-foreground uppercase tracking-widest font-sans">English Academy</span>
+            </div>
+          </Link>
 
-          {/* Desktop Menu */}
-          <div className="hidden sm:flex sm:items-center sm:space-x-8 sm:space-x-reverse">
-            {student && navLinks.map((link) => (
+          {/* Desktop Links */}
+          <div className="hidden md:flex items-center gap-1">
+            {user && navLinks.map((link) => (
               <Link
                 key={link.path}
                 to={link.path}
                 className={cn(
-                  "inline-flex items-center px-1 pt-1 border-b-2 text-sm font-medium",
+                  "px-4 py-2 rounded-lg text-sm font-medium transition-all flex items-center gap-2",
                   location.pathname === link.path
-                    ? "border-blue-500 text-gray-900"
-                    : "border-transparent text-gray-500 hover:border-gray-300 hover:text-gray-700"
-                )}
-              >
-                {link.name}
-              </Link>
-            ))}
-            {student ? (
-              <button
-                onClick={handleLogout}
-                className="inline-flex items-center gap-2 px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-red-600 hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500 transition-colors"
-              >
-                <LogOut className="w-4 h-4" />
-                تسجيل خروج
-              </button>
-            ) : (
-              <Link
-                to="/login"
-                className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-colors"
-              >
-                تسجيل الدخول
-              </Link>
-            )}
-          </div>
-
-          {/* Mobile menu button */}
-          <div className="flex items-center sm:hidden">
-            <button
-              onClick={toggleMenu}
-              className="inline-flex items-center justify-center p-2 rounded-md text-gray-400 hover:text-gray-500 hover:bg-gray-100 focus:outline-none focus:ring-2 focus:ring-inset focus:ring-blue-500"
-            >
-              <span className="sr-only">Open main menu</span>
-              {isOpen ? <X className="block h-6 w-6" /> : <Menu className="block h-6 w-6" />}
-            </button>
-          </div>
-        </div>
-      </div>
-
-      {/* Mobile Menu */}
-      {isOpen && (
-        <div className="sm:hidden border-t border-gray-200 bg-white">
-          <div className="pt-2 pb-3 space-y-1">
-            {student && navLinks.map((link) => (
-              <Link
-                key={link.path}
-                to={link.path}
-                onClick={closeMenu}
-                className={cn(
-                  "flex items-center gap-3 pl-3 pr-4 py-3 border-l-4 text-base font-medium",
-                  location.pathname === link.path
-                    ? "bg-blue-50 border-blue-500 text-blue-700"
-                    : "border-transparent text-gray-600 hover:bg-gray-50 hover:border-gray-300 hover:text-gray-800"
+                    ? "bg-primary text-primary-foreground shadow-md"
+                    : "text-muted-foreground hover:text-foreground hover:bg-muted"
                 )}
               >
                 {link.icon}
                 {link.name}
               </Link>
             ))}
-            {!student && (
-              <Link
-                to="/login"
-                onClick={closeMenu}
-                className="block pl-3 pr-4 py-3 border-l-4 border-transparent text-base font-medium text-gray-600 hover:bg-gray-50 hover:border-gray-300 hover:text-gray-800"
-              >
-                تسجيل الدخول
-              </Link>
-            )}
           </div>
-          {student && (
-            <div className="pt-4 pb-3 border-t border-gray-200">
-              <div className="flex items-center px-4">
-                <div className="flex-shrink-0">
-                  <div className="h-10 w-10 rounded-full bg-blue-100 flex items-center justify-center text-blue-600 font-bold text-lg">
-                    {student.first_name.charAt(0)}
-                  </div>
-                </div>
-                <div className="mr-3">
-                  <div className="text-base font-medium text-gray-800">{student.first_name} {student.last_name}</div>
-                  <div className="text-sm font-medium text-gray-500">طالب</div>
-                </div>
+        </div>
+
+        <div className="flex items-center gap-3">
+          {user ? (
+            <div className="hidden md:flex items-center gap-4">
+              <div className="flex flex-col items-end">
+                <span className="text-xs font-bold text-foreground">{user.first_name} {user.last_name}</span>
+                <span className="text-[10px] text-muted-foreground">{admin ? 'أستاذ' : 'طالب'}</span>
               </div>
-              <div className="mt-3 space-y-1">
-                <button
-                  onClick={() => {
-                    closeMenu();
-                    handleLogout();
-                  }}
-                  className="flex w-full items-center gap-3 pl-3 pr-4 py-3 border-l-4 border-transparent text-base font-medium text-red-600 hover:bg-red-50 hover:border-red-300"
-                >
-                  <LogOut className="w-5 h-5" />
-                  تسجيل خروج
-                </button>
-              </div>
+              <Button variant="destructive" size="sm" onClick={handleLogout} className="rounded-xl gap-2">
+                <LogOut className="w-4 h-4" />
+                خروج
+              </Button>
             </div>
+          ) : (
+            <Link to="/login" className="hidden md:block">
+              <Button variant="default" className="rounded-xl px-6">تسجيل الدخول</Button>
+            </Link>
+          )}
+
+          {/* Mobile menu button */}
+          <button
+            onClick={toggleMenu}
+            className="md:hidden p-2 rounded-xl bg-muted text-foreground hover:bg-muted/80 transition-colors"
+          >
+            {isOpen ? <X className="h-6 w-6" /> : <Menu className="h-6 w-6" />}
+          </button>
+        </div>
+      </div>
+
+      {/* Mobile Menu */}
+      <div className={cn(
+        "fixed inset-0 top-[72px] bg-background/95 backdrop-blur-xl z-40 md:hidden transition-all duration-300",
+        isOpen ? "translate-x-0 opacity-100" : "translate-x-full opacity-0 pointer-events-none"
+      )}>
+        <div className="p-6 space-y-4">
+          {user && navLinks.map((link) => (
+            <Link
+              key={link.path}
+              to={link.path}
+              onClick={closeMenu}
+              className={cn(
+                "flex items-center gap-4 p-4 rounded-2xl text-lg font-medium transition-all",
+                location.pathname === link.path
+                  ? "bg-primary text-primary-foreground shadow-lg"
+                  : "text-muted-foreground hover:bg-muted hover:text-foreground"
+              )}
+            >
+              {link.icon}
+              {link.name}
+            </Link>
+          ))}
+          {!user && (
+            <Link to="/login" onClick={closeMenu}>
+              <Button className="w-full py-6 text-lg rounded-2xl">تسجيل الدخول</Button>
+            </Link>
+          )}
+          {user && (
+            <Button variant="destructive" className="w-full py-6 text-lg rounded-2xl gap-3" onClick={handleLogout}>
+              <LogOut className="w-5 h-5" />
+              تسجيل خروج
+            </Button>
           )}
         </div>
-      )}
+      </div>
     </nav>
   );
 }

@@ -11,6 +11,8 @@ import Login from './pages/Login';
 import Exams from './pages/Exams';
 import Profile from './pages/Profile';
 
+import AdminDashboard from './pages/AdminDashboard';
+
 export default function App() {
   return (
     <Router>
@@ -20,6 +22,7 @@ export default function App() {
           <Route path="/login" element={<Login />} />
           <Route path="/exams" element={<Exams />} />
           <Route path="/profile" element={<Profile />} />
+          <Route path="/admin" element={<AdminDashboard />} />
         </Routes>
       </Layout>
     </Router>

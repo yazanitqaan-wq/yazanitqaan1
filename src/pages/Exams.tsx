@@ -3,16 +3,24 @@ import { Navigate, useNavigate } from 'react-router-dom';
 import { authService } from '../services/authService';
 import { examService, Exam } from '../services/examService';
 import ExamCard from '../components/ExamCard';
-import { BookOpen } from 'lucide-react';
+import { BookOpen, Search, Filter, LayoutGrid, List } from 'lucide-react';
+import { Input } from '../components/ui/input';
+import { Button } from '../components/ui/button';
+import { Badge } from '../components/ui/badge';
+import { cn } from '../lib/utils';
 
 export default function Exams() {
   const [exams, setExams] = useState<Exam[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [searchQuery, setSearchQuery] = useState('');
+  const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
   const navigate = useNavigate();
   const student = authService.getCurrentStudent();
+  const admin = authService.getCurrentAdmin();
+  const user = student || admin;
 
-  if (!student) {
+  if (!user) {
     return <Navigate to="/login" replace />;
   }
 
@@ -30,40 +38,84 @@ export default function Exams() {
   }, []);
 
   const handleEnterExam = (examId: string) => {
-    // In a real app, this would navigate to the actual exam taking interface
-    // For this prototype, we'll just show an alert or navigate to a placeholder
     alert(`جاري الدخول للامتحان: ${examId}\n(هذه نسخة تجريبية، سيتم إضافة واجهة الامتحان لاحقاً)`);
   };
 
+  const filteredExams = exams.filter(exam => 
+    exam.title.toLowerCase().includes(searchQuery.toLowerCase())
+  );
+
   return (
-    <div className="space-y-8">
-      <div className="flex items-center gap-3 border-b border-gray-200 pb-6">
-        <div className="p-3 bg-blue-100 text-blue-600 rounded-xl">
-          <BookOpen className="w-8 h-8" />
+    <div className="space-y-10 pb-20">
+      {/* Header Section */}
+      <div className="flex flex-col md:flex-row justify-between items-start md:items-end gap-6">
+        <div className="space-y-2">
+          <Badge variant="secondary" className="rounded-full px-4">قائمة الاختبارات</Badge>
+          <h1 className="text-4xl md:text-5xl font-serif font-bold text-foreground">الامتحانات المتاحة</h1>
+          <p className="text-muted-foreground text-lg">اختر الامتحان المناسب وابدأ رحلة التميز اليوم.</p>
         </div>
-        <div>
-          <h1 className="text-3xl font-bold text-gray-900">الامتحانات</h1>
-          <p className="text-gray-500 mt-1">قائمة الامتحانات المتاحة والمجدولة</p>
+        
+        <div className="flex items-center gap-2 bg-muted/50 p-1 rounded-xl">
+          <Button 
+            variant={viewMode === 'grid' ? 'default' : 'ghost'} 
+            size="icon" 
+            onClick={() => setViewMode('grid')}
+            className="rounded-lg"
+          >
+            <LayoutGrid className="w-4 h-4" />
+          </Button>
+          <Button 
+            variant={viewMode === 'list' ? 'default' : 'ghost'} 
+            size="icon" 
+            onClick={() => setViewMode('list')}
+            className="rounded-lg"
+          >
+            <List className="w-4 h-4" />
+          </Button>
         </div>
       </div>
 
+      {/* Filters & Search */}
+      <div className="flex flex-col md:flex-row gap-4 items-center">
+        <div className="relative flex-1 w-full">
+          <Search className="absolute right-4 top-1/2 -translate-y-1/2 w-5 h-5 text-muted-foreground" />
+          <Input 
+            placeholder="ابحث عن امتحان..." 
+            className="h-14 pr-12 rounded-2xl bg-white dark:bg-slate-900 border-muted shadow-sm focus:ring-primary"
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+          />
+        </div>
+        <Button variant="outline" className="h-14 px-6 rounded-2xl gap-2 border-muted bg-white dark:bg-slate-900 shadow-sm">
+          <Filter className="w-4 h-4" />
+          تصفية النتائج
+        </Button>
+      </div>
+
+      {/* Exams Grid/List */}
       {loading ? (
-        <div className="flex justify-center py-12">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
+        <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
+          {[1, 2, 3].map(i => (
+            <div key={i} className="h-64 bg-muted animate-pulse rounded-[2rem]" />
+          ))}
         </div>
       ) : error ? (
-        <div className="bg-red-50 text-red-700 p-4 rounded-xl border border-red-100">
-          {error}
+        <div className="bg-destructive/10 border border-destructive/20 text-destructive p-8 rounded-[2rem] text-center space-y-4">
+          <BookOpen className="w-12 h-12 mx-auto opacity-50" />
+          <p className="text-xl font-bold">{error}</p>
+          <Button variant="outline" onClick={() => window.location.reload()}>إعادة المحاولة</Button>
         </div>
-      ) : exams.length === 0 ? (
-        <div className="text-center py-16 bg-white rounded-2xl border border-gray-100 shadow-sm">
-          <BookOpen className="w-16 h-16 text-gray-300 mx-auto mb-4" />
-          <h3 className="text-xl font-medium text-gray-900 mb-2">لا يوجد امتحانات</h3>
-          <p className="text-gray-500">لم يتم جدولة أي امتحانات حالياً.</p>
+      ) : filteredExams.length === 0 ? (
+        <div className="text-center py-20 space-y-4 bg-muted/30 rounded-[2rem] border-2 border-dashed border-muted">
+          <Search className="w-16 h-16 mx-auto text-muted-foreground opacity-20" />
+          <p className="text-xl text-muted-foreground">لم يتم العثور على امتحانات تطابق بحثك.</p>
         </div>
       ) : (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {exams.map((exam) => (
+        <div className={cn(
+          "grid gap-8",
+          viewMode === 'grid' ? "md:grid-cols-2 lg:grid-cols-3" : "grid-cols-1"
+        )}>
+          {filteredExams.map((exam) => (
             <ExamCard key={exam.id} exam={exam} onEnterExam={handleEnterExam} />
           ))}
         </div>
